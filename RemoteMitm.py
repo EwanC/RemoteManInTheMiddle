@@ -123,13 +123,6 @@ def connect():
 
   socket.setdefaulttimeout(60)
 
-  # open a socket to stub
-  try:
-      gNetwork.CreateServerSocket(); 
-  except Exception,e:
-      print 'Unable to create server socket ' + str(e)
-      return False
-
   # open a socket to host
   try:
       gNetwork.CreateClientSocket(); 
@@ -145,6 +138,14 @@ def connect():
       return False
 
 
+  # open a socket to stub
+  try:
+      gNetwork.CreateServerSocket(); 
+  except Exception,e:
+      print 'Unable to create server socket ' + str(e)
+      return False
+
+  
   return True
 
 
