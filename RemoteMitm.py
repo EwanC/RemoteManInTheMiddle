@@ -1,4 +1,27 @@
 #! /usr/bin/python
+#
+#___  ___              _____        _____ _           ___  ____     _     _ _      
+#|  \/  |             |_   _|      |_   _| |          |  \/  (_)   | |   | | |     
+#| .  . | __ _ _ __     | | _ __     | | | |__   ___  | .  . |_  __| | __| | | ___ 
+#| |\/| |/ _` | '_ \    | || '_ \    | | | '_ \ / _ \ | |\/| | |/ _` |/ _` | |/ _ \
+#| |  | | (_| | | | |  _| || | | |   | | | | | |  __/ | |  | | | (_| | (_| | |  __/
+#\_|  |_/\__,_|_| |_|  \___/_| |_|   \_/ |_| |_|\___| \_|  |_/_|\__,_|\__,_|_|\___|
+#
+# Ewan Crawford 07/07/2015
+#
+# Script for intercepting communications between a host debugger and remote stub.
+# By providing a file of packet substitutions the script will intercept the packets,
+# check for matches, perfom substitutions, and recalculate packet checksum.
+#
+# Usage: python RemoteMitm.py -H <stub ip address> -S <stub port> -C <host debugger port> -F <file>
+#        -H host ip address of remote stub
+#        -S port of remote stub
+#        -C port to listen to host debugger on
+#        -F colon separated file of packet substitutions
+
+
+
+
 
 import optparse
 import socket
@@ -52,6 +75,16 @@ class Forward(threading.Thread):
    self.sender = send
    self.reciever = reciever
 
+
+  def checksum(self, packet):
+      split = packet.split('#')
+      hashNum = sum(bytearray(split[0])) % 256
+      hexdigi = hex(hashNum)[2:]
+
+      newpacket = split[0].strip() + "#" + str(hexdigi)
+      print "new packet " + split[0] +"END" 
+      return newpacket
+
   def run(self):
      global gSubs
      while 1:
@@ -59,7 +92,9 @@ class Forward(threading.Thread):
          if not data: break
           
          for key,value in gSubs.iteritems():
-             data = data.replace(key,value)
+            if data.find(key) != -1:
+              data = data.replace(key,value)
+              data = self.checksum(data)
 
          print self.msg + str(data)
          self.sender.send(data) 
@@ -119,7 +154,7 @@ def loadFile(path):
 def parseoptions():
   global gNetwork
 
-  parser = optparse.OptionParser('usage %prog -H<target> -S <server port> -C <client port> -F<file>')
+  parser = optparse.OptionParser('usage %prog -H <stub ip address> -S <stub port> -C <host debugger port> -F <file>')
   parser.add_option('-H',dest='host',type='string')
   parser.add_option('-S',dest='sport',type='int')
   parser.add_option('-C',dest='cport',type='int')
@@ -133,7 +168,6 @@ def parseoptions():
   if cport is None:
      cport = 1234 
 
- 
   gNetwork = Network(host,sport,cport)
 
   fpath = options.file
