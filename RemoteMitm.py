@@ -207,8 +207,8 @@ def PortForward():
 
  global gNetwork
 
- thread1 = Forward("Host> ",gNetwork.clientSock,gNetwork.serverSock)
- thread2 = Forward("Stub> ",gNetwork.serverSock,gNetwork.clientSock)
+ thread1 = Forward("Stub> ",gNetwork.clientSock,gNetwork.serverSock)
+ thread2 = Forward("Host> ",gNetwork.serverSock,gNetwork.clientSock)
 
  try:
     thread1.start()
