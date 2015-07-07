@@ -79,13 +79,27 @@ class Forward(threading.Thread):
 
   
   # Calculate new checksum for packet after substitutions
-  def checksum(self, packet):
+  def checksum(self, packetStream):
+
+      packetStart = packetStream.find('$')
+      if packetStart == -1:
+         return packetStream
+   
+      packet = packetStream[packetStart+1:]
+
       split = packet.split('#')
-      hashNum = sum(bytearray(split[0])) % 256
+      if len(split) == 1: 
+         return packetStream
+
+      split = split[0].strip()
+
+
+      hashNum = sum(bytearray(split)) % 256
       hexdigi = hex(hashNum)[2:]
 
-      newpacket = split[0].strip() + "#" + str(hexdigi)
+      newpacket = "$" + split + "#" + str(hexdigi)
       return newpacket
+      
 
   # Each thread runs this function, which effectively port forwards
   def run(self):
@@ -147,7 +161,9 @@ def loadFile(path):
    split = line.split(':')     # The substitutions should be comma separated
    if len(split) != 2:
         continue
-   gSubs[split[0]] = split[1]
+   searcher = split[0].strip()
+   replacer = split[1].strip()
+   gSubs[searcher] = replacer
 
  print str(len(gSubs)) + ' substitutions loaded'
 
