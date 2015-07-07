@@ -19,18 +19,15 @@
 #        -C port to listen to host debugger on
 #        -F colon separated file of packet substitutions
 
-
-
-
-
 import optparse
 import socket
 import threading
 
-gSubs = {}
-gNetwork = None
+gSubs = {} # Global Dictionary of substitutions
+gNetwork = None # Global instance of object holding info about socket connections
 
 
+# Manages network connection info
 class Network:
 
   def __init__(self, host, serverPort, clientPort):
@@ -41,6 +38,7 @@ class Network:
       self.clientPort = clientPort
       self.clientSock = None
 
+  # Create and connect socket with the remote stub
   def CreateServerSocket(self):
     try:
         hostip = socket.gethostbyname(self.serverHost)
@@ -52,22 +50,26 @@ class Network:
     self.serverSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.serverSock.connect((self.serverHost, self.serverPort))
 
+  # Create socket and start listening for LLDB host connection
   def CreateClientSocket(self):
     self.clientSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.clientSock.bind(('', self.clientPort))
     self.clientSock.listen(1)
 
+  # Wait for lldb host to remotely connect to socket
   def WaitForClient(self):
     print 'Listening for connection from client on port ' + str(self.clientPort)
     conn, addr = self.clientSock.accept()
     self.clientSock = conn
     print 'Connection from ' + str(addr)  
  
+  # Close client and server sockets
   def CloseSockets(self):
    self.clientSock.close()
    self.serverSock.close() 
 
             
+# Instance of threading object so we can monitor both connections as the same time
 class Forward(threading.Thread):
   def __init__(self, msg, send, reciever):
    threading.Thread.__init__(self)
@@ -75,16 +77,17 @@ class Forward(threading.Thread):
    self.sender = send
    self.reciever = reciever
 
-
+  
+  # Calculate new checksum for packet after substitutions
   def checksum(self, packet):
       split = packet.split('#')
       hashNum = sum(bytearray(split[0])) % 256
       hexdigi = hex(hashNum)[2:]
 
       newpacket = split[0].strip() + "#" + str(hexdigi)
-      print "new packet " + split[0] +"END" 
       return newpacket
 
+  # Each thread runs this function, which effectively port forwards
   def run(self):
      global gSubs
      while 1:
@@ -100,28 +103,27 @@ class Forward(threading.Thread):
          self.sender.send(data) 
 
 
-
+# Initalize all the socket connections
 def connect():
   global gNetwork
 
   socket.setdefaulttimeout(60)
 
-  # open a socket to this port
+  # open a socket to stub
   try:
       gNetwork.CreateServerSocket(); 
   except Exception,e:
-      print 'unable to create server socket ' + str(e)
+      print 'Unable to create server socket ' + str(e)
       return False
 
-  # open a socket to this port
+  # open a socket to host
   try:
       gNetwork.CreateClientSocket(); 
   except Exception, e:
-      print 'unable to create client socket' + str(e)
+      print 'Unable to create client socket' + str(e)
       return False
 
-
-  # Wait for client to connect
+  # Wait for LLDB host to connect
   try:
       gNetwork.WaitForClient(); 
   except Exception, e:
@@ -132,25 +134,26 @@ def connect():
   return True
 
 
+# Load file of substitutions and parse into dictionary where the key is the target,
+# and the value is what it is repacled with
 def loadFile(path):
  global gSubs
 
  handle = open(path)
  if handle is None:
-   print 'unable to load command file'
    return False
 
- for line in handle:
-   split = line.split(':')
+ for line in handle:           # Each line should contain a new substitutions
+   split = line.split(':')     # The substitutions should be comma separated
    if len(split) != 2:
         continue
    gSubs[split[0]] = split[1]
-
 
  print str(len(gSubs)) + ' substitutions loaded'
 
  return True
 
+# Parse command line options
 def parseoptions():
   global gNetwork
 
@@ -165,7 +168,7 @@ def parseoptions():
   sport = options.sport
   cport = options.cport
 
-  if cport is None:
+  if cport is None: # If no port for the host debugger to connect to is supplied, default to 1234
      cport = 1234 
 
   gNetwork = Network(host,sport,cport)
@@ -183,7 +186,8 @@ def parseoptions():
 
   return
 
-def go():
+# Starts threads to forward the ports for each connection
+def PortForward():
 
  global gNetwork
 
@@ -196,23 +200,27 @@ def go():
  except Exception, e:
    print "Error: unable to start thread " + str(e)
  
+ # Wait for threads to finish
  try:
    thread1.join()
    thread2.join()
  except Exception, e:
    print "Error: unable to join thread " + str(e)
 
+ # Close all sockets now we're done
  gNetwork.CloseSockets() 
 
 
 def main():
 
+ # Parse CLI options
  parseoptions()
 
+ # Connect to host and stub
  if not connect():
     exit(0)
 
- go()
+ PortForward() # Start port forwarding
 
  return
 
