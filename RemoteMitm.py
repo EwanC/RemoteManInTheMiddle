@@ -1,8 +1,8 @@
 #! /usr/bin/python
 #
-#___  ___              _____        _____ _           ___  ____     _     _ _      
-#|  \/  |             |_   _|      |_   _| |          |  \/  (_)   | |   | | |     
-#| .  . | __ _ _ __     | | _ __     | | | |__   ___  | .  . |_  __| | __| | | ___ 
+#___  ___              _____        _____ _           ___  ____     _     _ _
+#|  \/  |             |_   _|      |_   _| |          |  \/  (_)   | |   | | |
+#| .  . | __ _ _ __     | | _ __     | | | |__   ___  | .  . |_  __| | __| | | ___
 #| |\/| |/ _` | '_ \    | || '_ \    | | | '_ \ / _ \ | |\/| | |/ _` |/ _` | |/ _ \
 #| |  | | (_| | | | |  _| || | | |   | | | | | |  __/ | |  | | | (_| | (_| | |  __/
 #\_|  |_/\__,_|_| |_|  \___/_| |_|   \_/ |_| |_|\___| \_|  |_/_|\__,_|\__,_|_|\___|
@@ -61,12 +61,12 @@ class Network:
     print 'Listening for connection from client on port ' + str(self.clientPort)
     conn, addr = self.clientSock.accept()
     self.clientSock = conn
-    print 'Connection from ' + str(addr)  
+    print 'Connection from ' + str(addr)
  
   # Close client and server sockets
   def CloseSockets(self):
    self.clientSock.close()
-   self.serverSock.close() 
+   self.serverSock.close()
 
             
 # Instance of threading object so we can monitor both connections as the same time
@@ -88,7 +88,7 @@ class Forward(threading.Thread):
       packet = packetStream[packetStart+1:]
 
       split = packet.split('#')
-      if len(split) == 1: 
+      if len(split) == 1:
          return packetStream
 
       split = split[0].strip()
@@ -114,7 +114,7 @@ class Forward(threading.Thread):
               data = self.checksum(data)
 
          print self.msg + str(data)
-         self.sender.send(data) 
+         self.sender.send(data)
 
 
 # Initalize all the socket connections
@@ -125,14 +125,14 @@ def connect():
 
   # open a socket to host
   try:
-      gNetwork.CreateClientSocket(); 
+      gNetwork.CreateClientSocket();
   except Exception, e:
       print 'Unable to create client socket' + str(e)
       return False
 
   # Wait for LLDB host to connect
   try:
-      gNetwork.WaitForClient(); 
+      gNetwork.WaitForClient();
   except Exception, e:
       print 'Client couldn\'t connect ' + str(e)
       return False
@@ -140,7 +140,7 @@ def connect():
 
   # open a socket to stub
   try:
-      gNetwork.CreateServerSocket(); 
+      gNetwork.CreateServerSocket();
   except Exception,e:
       print 'Unable to create server socket ' + str(e)
       return False
@@ -186,7 +186,7 @@ def parseoptions():
   cport = options.cport
 
   if cport is None: # If no port for the host debugger to connect to is supplied, default to 1234
-     cport = 1234 
+     cport = 1234
 
   gNetwork = Network(host,sport,cport)
 
@@ -225,7 +225,7 @@ def PortForward():
    print "Error: unable to join thread " + str(e)
 
  # Close all sockets now we're done
- gNetwork.CloseSockets() 
+ gNetwork.CloseSockets()
 
 
 def main():
